@@ -76,7 +76,14 @@
 
     <div class="result-hero">
       <span class="result-label">Recommended Bitrate</span>
-      <span class="result-value" id="bitrate-value">--</span>
+      <div class="value-row">
+        <span class="result-value" id="bitrate-value">--</span>
+        <button class="copy-btn" type="button" data-copy="bitrate-value" aria-label="Copy Mbps value">⧉</button>
+      </div>
+      <div class="value-row">
+        <span class="result-value-alt" id="bitrate-value-kbps">--</span>
+        <button class="copy-btn" type="button" data-copy="bitrate-value-kbps" aria-label="Copy Kbps value">⧉</button>
+      </div>
       <span class="result-sub" id="bitrate-range"></span>
     </div>
 

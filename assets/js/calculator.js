@@ -97,7 +97,12 @@ function calculate() {
 
   const divisor = gcd(width, height) || 1;
 
-  el("bitrate-value").textContent = `${bitrateMbps.toFixed(2)} Mbps`;
+  const mbpsRounded = bitrateMbps.toFixed(2);
+  const kbpsRounded = (bitrateMbps * 1000).toFixed(0);
+  el("bitrate-value").textContent = `${mbpsRounded} Mbps`;
+  el("bitrate-value").dataset.value = mbpsRounded;
+  el("bitrate-value-kbps").textContent = `${kbpsRounded} Kbps`;
+  el("bitrate-value-kbps").dataset.value = kbpsRounded;
   el("bitrate-range").textContent = `Range: ${lowMbps.toFixed(2)} - ${highMbps.toFixed(2)} Mbps`;
   el("storage-daily").textContent = `${dailyGB.toFixed(1)} GB`;
   el("storage-monthly").textContent = `${monthlyTB.toFixed(2)} TB`;
@@ -133,6 +138,17 @@ function applyTheme(theme) {
   toggle.setAttribute("aria-label", theme === "dark" ? "Switch to light theme" : "Switch to dark theme");
 }
 
+function initCopyButtons() {
+  document.querySelectorAll(".copy-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const value = el(btn.dataset.copy).dataset.value;
+      await navigator.clipboard.writeText(value);
+      btn.classList.add("copied");
+      setTimeout(() => btn.classList.remove("copied"), 1000);
+    });
+  });
+}
+
 populateSelects();
 qualityInput.addEventListener("input", () => {
   qualityValue.textContent = `${qualityInput.value}%`;
@@ -142,4 +158,5 @@ document.querySelectorAll("input, select").forEach((elm) => {
   if (elm !== qualityInput) elm.addEventListener("input", calculate);
 });
 initTheme();
+initCopyButtons();
 calculate();
