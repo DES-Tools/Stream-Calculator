@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CCTV Stream Calculator</title>
+<meta name="description" content="Estimate bitrate and storage requirements for IP camera streams.">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <h1>CCTV Stream Calculator</h1>
+  <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to light theme">
+    <span aria-hidden="true">☀</span>
+  </button>
+</header>
+
+<main class="layout">
+
+  <section class="card" aria-labelledby="inputs-heading">
+    <h2 id="inputs-heading">Camera Settings</h2>
+
+    <div class="field">
+      <label for="resolution">Resolution</label>
+      <select id="resolution"></select>
+    </div>
+
+    <div class="field field-row" id="custom-dims" hidden>
+      <div>
+        <label for="width">Width (px)</label>
+        <input id="width" type="number" min="1" value="1920">
+      </div>
+      <div>
+        <label for="height">Height (px)</label>
+        <input id="height" type="number" min="1" value="1080">
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="fps">Frame Rate (FPS)</label>
+      <select id="fps"></select>
+    </div>
+
+    <div class="field" id="custom-fps-wrap" hidden>
+      <label for="custom-fps">Custom FPS</label>
+      <input id="custom-fps" type="number" min="1" value="7">
+    </div>
+
+    <div class="field field-row">
+      <div>
+        <label for="codec">Codec</label>
+        <select id="codec">
+          <option value="1">H.264</option>
+          <option value="0.65">H.265 (HEVC)</option>
+        </select>
+      </div>
+      <div>
+        <label for="motion">Scene Motion</label>
+        <select id="motion">
+          <option value="0.8">Static</option>
+          <option value="1" selected>Moderate</option>
+          <option value="1.5">High</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="quality">Quality <span id="quality-value">70%</span></label>
+      <input id="quality" type="range" min="50" max="100" value="70">
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="results-heading">
+    <h2 id="results-heading">Results</h2>
+
+    <div class="result-hero">
+      <span class="result-label">Recommended Bitrate</span>
+      <span class="result-value" id="bitrate-value">--</span>
+      <span class="result-sub" id="bitrate-range"></span>
+    </div>
+
+    <div class="result-grid">
+      <div class="result-block">
+        <span class="result-label">Daily Storage</span>
+        <span class="result-value" id="storage-daily">--</span>
+      </div>
+      <div class="result-block">
+        <span class="result-label">Monthly Storage</span>
+        <span class="result-value" id="storage-monthly">--</span>
+      </div>
+    </div>
+
+    <dl class="info-list">
+      <div><dt>Megapixels</dt><dd id="info-mp">--</dd></div>
+      <div><dt>Aspect Ratio</dt><dd id="info-ar">--</dd></div>
+      <div><dt>Total Pixels</dt><dd id="info-px">--</dd></div>
+    </dl>
+
+    <h3>Same Aspect Ratio</h3>
+    <table>
+      <thead><tr><th>Scale</th><th>Resolution</th></tr></thead>
+      <tbody id="family-body"></tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer>
+  <p>Bitrate estimates follow common industry rules-of-thumb and should be validated against manufacturer specs.</p>
+</footer>
+
+<script src="assets/js/calculator.js"></script>
+</body>
+</html>
