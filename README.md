@@ -6,11 +6,7 @@ No build step, no dependencies — plain HTML/CSS/JS that runs entirely client-s
 
 ## Live demo
 
-Enable GitHub Pages for this repo (Settings → Pages → Deploy from branch `main` / `root`), then it's available at:
-
-```
-https://<your-username>.github.io/Stream-Calculator/
-```
+https://des-tools.github.io/Stream-Calculator/
 
 ## Running locally
 
