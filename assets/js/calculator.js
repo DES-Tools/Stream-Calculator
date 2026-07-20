@@ -126,11 +126,13 @@ const prefs = window.DESPrefs || {
   set: (key, value) => localStorage.setItem(key, value),
 };
 
+// The dashboard's header already shows the tool name and theme control.
+if (prefs.embedded) document.querySelector(".topbar").hidden = true;
+
 async function initTheme() {
   const toggle = el("theme-toggle");
 
   if (prefs.embedded) {
-    toggle.hidden = true;
     prefs.onThemeChange((theme) => applyTheme(theme === "light" ? "light" : "dark"));
     return;
   }
