@@ -80,6 +80,11 @@ function currentFps() {
   return isCustom ? Number(customFpsInput.value) || 0 : Number(fpsSelect.value);
 }
 
+function bitrateMbpsFor(width, height, fps, codecFactor, motionFactor, qualityFactor) {
+  const megapixels = (width * height) / 1e6;
+  return megapixels * fps * BASE_BITRATE_FACTOR * codecFactor * motionFactor * qualityFactor;
+}
+
 function calculate() {
   const [width, height] = currentResolution();
   const fps = currentFps();
@@ -88,7 +93,7 @@ function calculate() {
   const qualityFactor = 0.75 + ((Number(qualityInput.value) - 50) / 50) * 0.65;
 
   const megapixels = (width * height) / 1e6;
-  const bitrateMbps = megapixels * fps * BASE_BITRATE_FACTOR * codecFactor * motionFactor * qualityFactor;
+  const bitrateMbps = bitrateMbpsFor(width, height, fps, codecFactor, motionFactor, qualityFactor);
   const lowMbps = bitrateMbps * 0.8;
   const highMbps = bitrateMbps * 1.2;
 
@@ -114,7 +119,15 @@ function calculate() {
   el("family-body").innerHTML = FAMILY_SCALES.map(([label, scale]) => {
     const w = Math.round((width * scale) / 2) * 2;
     const h = Math.round((w / aspect) / 2) * 2;
-    return `<tr><td>${label}</td><td>${w} x ${h}</td></tr>`;
+    const mbps = bitrateMbpsFor(w, h, fps, codecFactor, motionFactor, qualityFactor);
+    const mbpsStr = mbps.toFixed(2);
+    const kbpsStr = (mbps * 1000).toFixed(0);
+    return `<tr>
+      <td>${label}</td>
+      <td>${w} x ${h}</td>
+      <td class="value-row">${mbpsStr} <button class="copy-btn" type="button" data-value="${mbpsStr}" aria-label="Copy Mbps value">⧉</button></td>
+      <td class="value-row">${kbpsStr} <button class="copy-btn" type="button" data-value="${kbpsStr}" aria-label="Copy Kbps value">⧉</button></td>
+    </tr>`;
   }).join("");
 }
 
@@ -156,14 +169,23 @@ function applyTheme(theme) {
   toggle.setAttribute("aria-label", theme === "dark" ? "Switch to light theme" : "Switch to dark theme");
 }
 
+async function copyAndFlash(btn, value) {
+  await navigator.clipboard.writeText(value);
+  btn.classList.add("copied");
+  setTimeout(() => btn.classList.remove("copied"), 1000);
+}
+
 function initCopyButtons() {
   document.querySelectorAll(".copy-btn").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const value = el(btn.dataset.copy).dataset.value;
-      await navigator.clipboard.writeText(value);
-      btn.classList.add("copied");
-      setTimeout(() => btn.classList.remove("copied"), 1000);
-    });
+    btn.addEventListener("click", () => copyAndFlash(btn, el(btn.dataset.copy).dataset.value));
+  });
+
+  // Family table rows are re-rendered on every calculate(), so their copy
+  // buttons use delegation on the (persistent) table body instead of
+  // per-button listeners that would need re-attaching each render.
+  el("family-body").addEventListener("click", (e) => {
+    const btn = e.target.closest(".copy-btn");
+    if (btn?.dataset.value) copyAndFlash(btn, btn.dataset.value);
   });
 }
 
