@@ -25,12 +25,6 @@ const CUSTOM_RESOLUTION_INDEX = RESOLUTIONS.length - 1;
 const FPS_OPTIONS = [1, 2, 3, 5, 7, 10, 12, 15, 20, 25, 30, 60, "Custom"];
 const DEFAULT_FPS = 7;
 
-// Same-family scale steps shown in the "Same Aspect Ratio" table
-const FAMILY_SCALES = [
-  ["25%", 0.25], ["50%", 0.5], ["75%", 0.75],
-  ["100%", 1], ["150%", 1.5], ["200%", 2],
-];
-
 // Empirical bits-per-pixel-per-fps rule of thumb used across the CCTV industry
 // for ballpark H.264 bitrate estimates; codec/motion/quality are multipliers on top.
 const BASE_BITRATE_FACTOR = 0.07;
@@ -54,6 +48,11 @@ const favoritesListEl = el("favorites-list");
 function gcd(a, b) {
   while (b) [a, b] = [b, a % b];
   return a;
+}
+
+function reducedAspect(w, h) {
+  const d = gcd(w, h) || 1;
+  return [w / d, h / d];
 }
 
 function populateSelects() {
@@ -127,20 +126,24 @@ function calculate() {
   el("info-ar").textContent = `${width / divisor}:${height / divisor}`;
   el("info-px").textContent = (width * height).toLocaleString();
 
-  const aspect = width / height;
-  el("family-body").innerHTML = FAMILY_SCALES.map(([label, scale]) => {
-    const w = Math.round((width * scale) / 2) * 2;
-    const h = Math.round((w / aspect) / 2) * 2;
-    const mbps = bitrateMbpsFor(w, h, fps, codecFactor, motionFactor, qualityFactor);
-    const mbpsStr = mbps.toFixed(2);
-    const kbpsStr = (mbps * 1000).toFixed(0);
-    return `<tr>
-      <td>${label}</td>
-      <td><button type="button" class="link-btn family-res" data-w="${w}" data-h="${h}">${w} x ${h}</button></td>
-      <td><span class="value-row">${mbpsStr} <button class="copy-btn" type="button" data-value="${mbpsStr}" aria-label="Copy Mbps value">⧉</button></span></td>
-      <td><span class="value-row">${kbpsStr} <button class="copy-btn" type="button" data-value="${kbpsStr}" aria-label="Copy Kbps value">⧉</button></span></td>
-    </tr>`;
-  }).join("");
+  const [rw, rh] = reducedAspect(width, height);
+  const familyMatches = RESOLUTIONS
+    .filter((_, i) => i !== CUSTOM_RESOLUTION_INDEX)
+    .filter(([, w, h]) => { const [fw, fh] = reducedAspect(w, h); return fw === rw && fh === rh; })
+    .sort(([, w1, h1], [, w2, h2]) => w1 * h1 - w2 * h2);
+
+  el("family-body").innerHTML = familyMatches.length
+    ? familyMatches.map(([label, w, h]) => {
+        const mbps = bitrateMbpsFor(w, h, fps, codecFactor, motionFactor, qualityFactor);
+        const mbpsStr = mbps.toFixed(2);
+        const kbpsStr = (mbps * 1000).toFixed(0);
+        return `<tr>
+          <td><button type="button" class="link-btn family-res" data-w="${w}" data-h="${h}">${label}</button></td>
+          <td><span class="value-row">${mbpsStr} <button class="copy-btn" type="button" data-value="${mbpsStr}" aria-label="Copy Mbps value">⧉</button></span></td>
+          <td><span class="value-row">${kbpsStr} <button class="copy-btn" type="button" data-value="${kbpsStr}" aria-label="Copy Kbps value">⧉</button></span></td>
+        </tr>`;
+      }).join("")
+    : `<tr><td colspan="3" class="favorites-empty">No other common resolutions share this aspect ratio.</td></tr>`;
 
   updateStarButton({ width, height, fps, codec: codecSelect.value, motion: motionSelect.value, quality: Number(qualityInput.value) });
 }
