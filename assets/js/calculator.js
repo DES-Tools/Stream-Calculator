@@ -125,8 +125,8 @@ function calculate() {
     return `<tr>
       <td>${label}</td>
       <td>${w} x ${h}</td>
-      <td class="value-row">${mbpsStr} <button class="copy-btn" type="button" data-value="${mbpsStr}" aria-label="Copy Mbps value">⧉</button></td>
-      <td class="value-row">${kbpsStr} <button class="copy-btn" type="button" data-value="${kbpsStr}" aria-label="Copy Kbps value">⧉</button></td>
+      <td><span class="value-row">${mbpsStr} <button class="copy-btn" type="button" data-value="${mbpsStr}" aria-label="Copy Mbps value">⧉</button></span></td>
+      <td><span class="value-row">${kbpsStr} <button class="copy-btn" type="button" data-value="${kbpsStr}" aria-label="Copy Kbps value">⧉</button></span></td>
     </tr>`;
   }).join("");
 }
