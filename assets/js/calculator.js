@@ -172,8 +172,9 @@ function calculate() {
 }
 
 // Falls back to plain localStorage if the shared prefs script didn't load (e.g. offline).
+// embedded is still computed locally (not hardcoded false) since that check needs no network.
 const prefs = window.DESPrefs || {
-  embedded: false,
+  embedded: (() => { try { return window.self !== window.top; } catch { return true; } })(),
   onThemeChange: () => {},
   get: (key, fallback) => {
     const local = localStorage.getItem(key);
