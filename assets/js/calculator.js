@@ -153,13 +153,15 @@ function calculate() {
         const mbps = bitrateMbpsFor(w, h, fps, codecFactor, motionFactor, qualityFactor);
         const mbpsStr = mbps.toFixed(2);
         const kbpsStr = (mbps * 1000).toFixed(0);
+        const scalePct = Math.round((w / width) * 100);
         return `<tr>
+          <td>${scalePct}%</td>
           <td><button type="button" class="link-btn family-res" data-w="${w}" data-h="${h}">${label}</button></td>
           <td><span class="value-row">${mbpsStr} <button class="copy-btn" type="button" data-value="${mbpsStr}" aria-label="Copy Mbps value">⧉</button></span></td>
           <td><span class="value-row">${kbpsStr} <button class="copy-btn" type="button" data-value="${kbpsStr}" aria-label="Copy Kbps value">⧉</button></span></td>
         </tr>`;
       }).join("")
-    : `<tr><td colspan="3" class="favorites-empty">No other common resolutions share this aspect ratio.</td></tr>`;
+    : `<tr><td colspan="4" class="favorites-empty">No other common resolutions share this aspect ratio.</td></tr>`;
 
   updateStarButton({ width, height, fps, codec: codecSelect.value, motion: motionSelect.value, quality: Number(qualityInput.value) });
 }
