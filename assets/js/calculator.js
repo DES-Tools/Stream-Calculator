@@ -56,7 +56,7 @@ function gcd(a, b) {
 
 function populateSelects() {
   resolutionSelect.innerHTML = RESOLUTIONS.map(
-    ([label], i) => `<option value="${i}">${label}</option>`
+    ([label], i) => `<option value="${i}" ${i === CUSTOM_RESOLUTION_INDEX ? "selected" : ""}>${label}</option>`
   ).join("");
 
   fpsSelect.innerHTML = FPS_OPTIONS.map(
