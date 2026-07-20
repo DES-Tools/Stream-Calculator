@@ -127,7 +127,9 @@ const prefs = window.DESPrefs || {
 };
 
 // The dashboard's header already shows the tool name and theme control.
-if (prefs.embedded) document.querySelector(".topbar").hidden = true;
+// (.topbar sets its own `display: flex`, which beats the `hidden` attribute's
+// default `display: none` in the cascade, so set display directly instead.)
+if (prefs.embedded) document.querySelector(".topbar").style.display = "none";
 
 async function initTheme() {
   const toggle = el("theme-toggle");
