@@ -18,12 +18,15 @@
 
 <main class="layout">
 
-  <section class="card" aria-labelledby="inputs-heading">
+  <section class="card settings-card" aria-labelledby="inputs-heading">
     <h2 id="inputs-heading">Camera Settings</h2>
 
     <div class="field">
       <label for="resolution">Resolution</label>
-      <select id="resolution"></select>
+      <div class="resolution-row">
+        <select id="resolution"></select>
+        <button id="favorite-star" class="star-btn" type="button" hidden aria-pressed="false" aria-label="Save as favorite">☆</button>
+      </div>
     </div>
 
     <div class="field field-row" id="custom-dims" hidden>
@@ -68,6 +71,11 @@
     <div class="field">
       <label for="quality">Quality <span id="quality-value">70%</span></label>
       <input id="quality" type="range" min="50" max="100" value="70">
+    </div>
+
+    <div class="field favorites-section">
+      <label>Favorites</label>
+      <ul id="favorites-list" class="favorites-list"></ul>
     </div>
   </section>
 

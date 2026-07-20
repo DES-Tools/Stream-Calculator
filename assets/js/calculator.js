@@ -48,6 +48,8 @@ const codecSelect = el("codec");
 const motionSelect = el("motion");
 const qualityInput = el("quality");
 const qualityValue = el("quality-value");
+const favoriteStarBtn = el("favorite-star");
+const favoritesListEl = el("favorites-list");
 
 function gcd(a, b) {
   while (b) [a, b] = [b, a % b];
@@ -67,11 +69,21 @@ function populateSelects() {
 function currentResolution() {
   const isCustom = Number(resolutionSelect.value) === CUSTOM_RESOLUTION_INDEX;
   customDims.hidden = !isCustom;
+  favoriteStarBtn.hidden = !isCustom;
   if (isCustom) {
     return [Number(widthInput.value) || 0, Number(heightInput.value) || 0];
   }
   const [, w, h] = RESOLUTIONS[Number(resolutionSelect.value)];
   return [w, h];
+}
+
+// Loads a resolution back into Camera Settings as Custom -- used by both the
+// Same Aspect Ratio table and favorite rows to "load" a resolution.
+function applyResolution(width, height) {
+  resolutionSelect.value = String(CUSTOM_RESOLUTION_INDEX);
+  widthInput.value = width;
+  heightInput.value = height;
+  calculate();
 }
 
 function currentFps() {
@@ -124,19 +136,28 @@ function calculate() {
     const kbpsStr = (mbps * 1000).toFixed(0);
     return `<tr>
       <td>${label}</td>
-      <td>${w} x ${h}</td>
+      <td><button type="button" class="link-btn family-res" data-w="${w}" data-h="${h}">${w} x ${h}</button></td>
       <td><span class="value-row">${mbpsStr} <button class="copy-btn" type="button" data-value="${mbpsStr}" aria-label="Copy Mbps value">⧉</button></span></td>
       <td><span class="value-row">${kbpsStr} <button class="copy-btn" type="button" data-value="${kbpsStr}" aria-label="Copy Kbps value">⧉</button></span></td>
     </tr>`;
   }).join("");
+
+  updateStarButton({ width, height, fps, codec: codecSelect.value, motion: motionSelect.value, quality: Number(qualityInput.value) });
 }
 
 // Falls back to plain localStorage if the shared prefs script didn't load (e.g. offline).
 const prefs = window.DESPrefs || {
   embedded: false,
   onThemeChange: () => {},
-  get: (key, fallback) => Promise.resolve(localStorage.getItem(key) ?? fallback),
-  set: (key, value) => localStorage.setItem(key, value),
+  get: (key, fallback) => {
+    const local = localStorage.getItem(key);
+    if (local === null) return Promise.resolve(fallback);
+    try { return Promise.resolve(JSON.parse(local)); } catch { return Promise.resolve(local); }
+  },
+  set: (key, value) => {
+    localStorage.setItem(key, JSON.stringify(value));
+    return Promise.resolve();
+  },
 };
 
 // The dashboard's header already shows the tool name and theme control.
@@ -184,9 +205,112 @@ function initCopyButtons() {
   // buttons use delegation on the (persistent) table body instead of
   // per-button listeners that would need re-attaching each render.
   el("family-body").addEventListener("click", (e) => {
-    const btn = e.target.closest(".copy-btn");
-    if (btn?.dataset.value) copyAndFlash(btn, btn.dataset.value);
+    const copyBtn = e.target.closest(".copy-btn");
+    if (copyBtn?.dataset.value) { copyAndFlash(copyBtn, copyBtn.dataset.value); return; }
+    const resBtn = e.target.closest(".family-res");
+    if (resBtn) applyResolution(Number(resBtn.dataset.w), Number(resBtn.dataset.h));
   });
+}
+
+// ---- Favorites ----
+
+let favorites = [];
+
+function sameSettings(a, b) {
+  return a.width === b.width && a.height === b.height && a.fps === b.fps &&
+    a.codec === b.codec && a.motion === b.motion && a.quality === b.quality;
+}
+
+function findFavoriteIndex(settings) {
+  return favorites.findIndex((f) => sameSettings(f, settings));
+}
+
+function updateStarButton(settings) {
+  if (favoriteStarBtn.hidden) return;
+  const isFav = findFavoriteIndex(settings) >= 0;
+  favoriteStarBtn.textContent = isFav ? "★" : "☆";
+  favoriteStarBtn.classList.toggle("active", isFav);
+  favoriteStarBtn.setAttribute("aria-pressed", String(isFav));
+}
+
+function renderFavorites() {
+  if (!favorites.length) {
+    favoritesListEl.innerHTML = `<p class="favorites-empty">No favorites yet -- star a Custom resolution to save one.</p>`;
+    return;
+  }
+  favoritesListEl.innerHTML = favorites.map((fav) => {
+    const codecLabel = codecSelect.querySelector(`option[value="${fav.codec}"]`)?.textContent || fav.codec;
+    const motionLabel = motionSelect.querySelector(`option[value="${fav.motion}"]`)?.textContent || fav.motion;
+    return `<li class="favorite-row" draggable="true" data-id="${fav.id}">
+      <span class="drag-handle" aria-hidden="true">⠿</span>
+      <button type="button" class="link-btn favorite-res" data-id="${fav.id}">${fav.width} x ${fav.height}</button>
+      <span class="favorite-meta">${fav.fps} fps · ${codecLabel} · ${motionLabel} · ${fav.quality}%</span>
+      <button type="button" class="favorite-remove" data-id="${fav.id}" aria-label="Remove favorite">★</button>
+    </li>`;
+  }).join("");
+}
+
+async function persistFavorites() {
+  await prefs.set("favorites", favorites);
+}
+
+function initFavorites() {
+  favoriteStarBtn.addEventListener("click", async () => {
+    const [width, height] = currentResolution();
+    const settings = { width, height, fps: currentFps(), codec: codecSelect.value, motion: motionSelect.value, quality: Number(qualityInput.value) };
+    const idx = findFavoriteIndex(settings);
+    if (idx >= 0) {
+      favorites.splice(idx, 1);
+    } else {
+      favorites.push({ id: crypto.randomUUID(), ...settings });
+    }
+    renderFavorites();
+    updateStarButton(settings);
+    await persistFavorites();
+  });
+
+  favoritesListEl.addEventListener("click", async (e) => {
+    const resBtn = e.target.closest(".favorite-res");
+    if (resBtn) {
+      const fav = favorites.find((f) => f.id === resBtn.dataset.id);
+      if (fav) applyResolution(fav.width, fav.height);
+      return;
+    }
+    const removeBtn = e.target.closest(".favorite-remove");
+    if (removeBtn) {
+      favorites = favorites.filter((f) => f.id !== removeBtn.dataset.id);
+      renderFavorites();
+      updateStarButton({ width: Number(widthInput.value), height: Number(heightInput.value), fps: currentFps(), codec: codecSelect.value, motion: motionSelect.value, quality: Number(qualityInput.value) });
+      await persistFavorites();
+    }
+  });
+
+  // Simple "drop onto a row" reorder -- snaps into place on drop rather than
+  // live-reordering while dragging, which keeps this dependency-free.
+  let draggedId = null;
+  favoritesListEl.addEventListener("dragstart", (e) => {
+    const row = e.target.closest(".favorite-row");
+    if (row) draggedId = row.dataset.id;
+  });
+  favoritesListEl.addEventListener("dragover", (e) => e.preventDefault());
+  favoritesListEl.addEventListener("drop", async (e) => {
+    e.preventDefault();
+    const targetRow = e.target.closest(".favorite-row");
+    if (!draggedId || !targetRow || targetRow.dataset.id === draggedId) return;
+    const fromIdx = favorites.findIndex((f) => f.id === draggedId);
+    const toIdx = favorites.findIndex((f) => f.id === targetRow.dataset.id);
+    if (fromIdx < 0 || toIdx < 0) return;
+    const [moved] = favorites.splice(fromIdx, 1);
+    favorites.splice(toIdx, 0, moved);
+    draggedId = null;
+    renderFavorites();
+    await persistFavorites();
+  });
+}
+
+async function loadFavorites() {
+  favorites = (await prefs.get("favorites", [])) || [];
+  renderFavorites();
 }
 
 populateSelects();
@@ -199,4 +323,9 @@ document.querySelectorAll("input, select").forEach((elm) => {
 });
 initTheme();
 initCopyButtons();
+initFavorites();
 calculate();
+loadFavorites().then(() => {
+  const [width, height] = currentResolution();
+  updateStarButton({ width, height, fps: currentFps(), codec: codecSelect.value, motion: motionSelect.value, quality: Number(qualityInput.value) });
+});
