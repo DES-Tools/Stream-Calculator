@@ -120,12 +120,21 @@ function calculate() {
 
 // Falls back to plain localStorage if the shared prefs script didn't load (e.g. offline).
 const prefs = window.DESPrefs || {
+  embedded: false,
+  onThemeChange: () => {},
   get: (key, fallback) => Promise.resolve(localStorage.getItem(key) ?? fallback),
   set: (key, value) => localStorage.setItem(key, value),
 };
 
 async function initTheme() {
   const toggle = el("theme-toggle");
+
+  if (prefs.embedded) {
+    toggle.hidden = true;
+    prefs.onThemeChange((theme) => applyTheme(theme === "light" ? "light" : "dark"));
+    return;
+  }
+
   const stored = await prefs.get("theme", "dark");
   applyTheme(stored === "light" ? "light" : "dark");
 
