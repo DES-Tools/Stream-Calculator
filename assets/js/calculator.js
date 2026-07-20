@@ -118,16 +118,21 @@ function calculate() {
   }).join("");
 }
 
-function initTheme() {
+// Falls back to plain localStorage if the shared prefs script didn't load (e.g. offline).
+const prefs = window.DESPrefs || {
+  get: (key, fallback) => Promise.resolve(localStorage.getItem(key) ?? fallback),
+  set: (key, value) => localStorage.setItem(key, value),
+};
+
+async function initTheme() {
   const toggle = el("theme-toggle");
-  const stored = localStorage.getItem("theme");
-  const theme = stored === "light" ? "light" : "dark";
-  applyTheme(theme);
+  const stored = await prefs.get("theme", "dark");
+  applyTheme(stored === "light" ? "light" : "dark");
 
   toggle.addEventListener("click", () => {
     const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
     applyTheme(next);
-    localStorage.setItem("theme", next);
+    prefs.set("theme", next);
   });
 }
 
