@@ -175,7 +175,15 @@ function calculate() {
 // embedded is still computed locally (not hardcoded false) since that check needs no network.
 const prefs = window.DESPrefs || {
   embedded: (() => { try { return window.self !== window.top; } catch { return true; } })(),
-  onThemeChange: () => {},
+  onThemeChange: (callback) => {
+    try {
+      const parentDoc = window.parent.document;
+      callback(parentDoc.documentElement.dataset.theme || "light");
+      parentDoc.addEventListener("des-tools:theme", (e) => callback(e.detail));
+    } catch {
+      // cross-origin or no parent: can't follow, tool keeps its own default
+    }
+  },
   get: (key, fallback) => {
     const local = localStorage.getItem(key);
     if (local === null) return Promise.resolve(fallback);
